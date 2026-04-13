@@ -5,6 +5,9 @@ from flask import Flask, request, render_template
 
 app = Flask(__name__)
 
+match_df = pd.read_csv("match_df.csv")
+model = joblib.load("ipl_model.pkl")
+
 def get_matches_played(team, past_df):
     if past_df.empty:
         return 0
@@ -165,82 +168,7 @@ def predict_current_match_detailed(model, match_features_df):
 
     predicted_winner = team1 if pred == 1 else team2
 
-    # print("=" * 100)
-    # print("CURRENT MATCH PREDICTION")
-    # print("=" * 100)
-    # print(f"Match              : {team1} vs {team2}")
-    # print(f"Venue              : {row['venue']} | {row['city']}")
-    # print(f"Toss Winner        : {row['toss_winner']}")
-    # print(f"Toss Decision      : {row['toss_decision']}")
-    # print(f"Chasing Team       : {row['chasing_team']}")
-    # print(f"Defending Team     : {row['defending_team']}")
-    # print("-" * 100)
-    # print(f"Predicted Winner   : {predicted_winner}")
     return predicted_winner
-    # print(f"{team1} Win Prob    : {probs[1]:.4f}")
-    # print(f"{team2} Win Prob    : {probs[0]:.4f}")
-    # print("-" * 100)
-    # print("KEY SIGNALS")
-    # print("-" * 100)
-    # print(f"Overall Win Rate Diff            : {row['win_rate_diff']:.4f}")
-    # print(f"Recent 3 Match Form Diff         : {row['recent3_diff']:.4f}")
-    # print(f"Recent 5 Match Form Diff         : {row['recent5_diff']:.4f}")
-    # print(f"Recent 10 Match Form Diff        : {row['recent10_diff']:.4f}")
-    # print(f"Current Streak Diff              : {row['streak_diff']}")
-    # print(f"Head-to-Head Diff                : {row['h2h_diff']:.4f}")
-    # print(f"Venue Win Rate Diff              : {row['venue_win_rate_diff']:.4f}")
-    # print(f"Chase Win Rate Diff              : {row['chase_win_rate_diff']:.4f}")
-    # print(f"Defend Win Rate Diff             : {row['defend_win_rate_diff']:.4f}")
-    # print(f"Context Strength Diff            : {row['context_strength_diff']:.4f}")
-    # print(f"Venue Context Strength Diff      : {row['venue_context_strength_diff']:.4f}")
-    # print(f"Venue Chase Bias                 : {row['venue_chase_bias']:.4f}")
-    # print("-" * 100)
-
-    # if row["venue_chase_bias"] > 0.55:
-    #     print("Venue Insight      : Venue historically favors chasing")
-    # elif row["venue_chase_bias"] < 0.45:
-    #     print("Venue Insight      : Venue historically favors defending")
-    # else:
-    #     print("Venue Insight      : Venue looks neutral")
-
-    # print("-" * 100)
-
-    # if row["win_rate_diff"] > 0:
-    #     print(f"Overall Strength   : {team1} stronger historically")
-    # elif row["win_rate_diff"] < 0:
-    #     print(f"Overall Strength   : {team2} stronger historically")
-    # else:
-    #     print("Overall Strength   : Neutral")
-
-    # if row["recent5_diff"] > 0:
-    #     print(f"Recent Form        : {team1} better recent form")
-    # elif row["recent5_diff"] < 0:
-    #     print(f"Recent Form        : {team2} better recent form")
-    # else:
-    #     print("Recent Form        : Neutral")
-
-    # if row["h2h_diff"] > 0:
-    #     print(f"H2H Edge           : {team1}")
-    # elif row["h2h_diff"] < 0:
-    #     print(f"H2H Edge           : {team2}")
-    # else:
-    #     print("H2H Edge           : Neutral")
-
-    # if row["context_strength_diff"] > 0:
-    #     print(f"Role Fit           : {team1} better suited in current chase/defend role")
-    # elif row["context_strength_diff"] < 0:
-    #     print(f"Role Fit           : {team2} better suited in current chase/defend role")
-    # else:
-    #     print("Role Fit           : Neutral")
-
-    # if row["venue_context_strength_diff"] > 0:
-    #     print(f"Venue+Role Fit     : {team1} better suited at this venue in this role")
-    # elif row["venue_context_strength_diff"] < 0:
-    #     print(f"Venue+Role Fit     : {team2} better suited at this venue in this role")
-    # else:
-    #     print("Venue+Role Fit     : Neutral")
-
-    # print("=" * 100)
 
 def build_current_match_features(team1, team2, venue, city, toss_winner, toss_decision, match_df):
     # Decide chasing/defending teams
@@ -607,29 +535,7 @@ def predict_current_match_normalized(model, teamA, teamB, venue, city, toss_winn
 
     predicted_winner = teamA if p_a_final >= p_b_final else teamB
 
-    # print("=" * 100)
-    # print("NORMALIZED CURRENT MATCH PREDICTION")
-    # print("=" * 100)
-    # print(f"Match              : {teamA} vs {teamB}")
-    # print(f"Venue              : {venue} | {city}")
-    # print(f"Toss Winner        : {toss_winner}")
-    # print(f"Toss Decision      : {toss_decision}")
-    # print("-" * 100)
-    # print(f"{teamA} Win Prob    : {p_a_final:.4f}")
-    # print(f"{teamB} Win Prob    : {p_b_final:.4f}")
-    # print(f"Predicted Winner   : {predicted_winner}")
     return predicted_winner
-    # print("=" * 100)
-
-    # return {
-    #     "teamA": teamA,
-    #     "teamB": teamB,
-    #     "teamA_win_probability": p_a_final,
-    #     "teamB_win_probability": p_b_final,
-    #     "predicted_winner": predicted_winner,
-    #     "match_ab_features": match_ab,
-    #     "match_ba_features": match_ba
-    # }
 
 @app.route("/")
 def Home():
@@ -637,10 +543,6 @@ def Home():
 
 @app.route("/predict", methods=["POST"])
 def prediction():
-    match_df = pd.read_csv("match_df.csv")
-    
-    model = joblib.load("ipl_model.pkl")
-    
     team1 = request.form['team1']
     team2 = request.form['team2']
     toss_decision = request.form['toss_decision']
