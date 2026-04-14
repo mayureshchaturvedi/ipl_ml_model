@@ -12,7 +12,7 @@
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url("{{ url_for('static', filename='background.jpg') }}") center center / cover no-repeat fixed;
+            background: url("static/background.jpg") center center / cover no-repeat fixed;
             overflow-x: hidden;
             color: #333;
             position: relative;
@@ -264,6 +264,13 @@
         .result-text span {
             display: block;
         }
+        .result-text span.probability {
+            color: #111;
+            font-weight: 800;
+        }
+        .result-text span.probability.high {
+            color: #28a745;
+        }
         .result-value {
             color: #28a745;
             font-size: 22px;
@@ -325,7 +332,7 @@
 <body>
     <!-- Loading Screen -->
     <div id="loading-screen">
-        <img src="{{ url_for('static', filename='image1.png') }}" alt="Logo">
+        <img src="static/image1.png" alt="Logo">
         <div class="progress-bar">
             <div class="progress-fill"></div>
         </div>
@@ -333,7 +340,7 @@
 
     <!-- Navbar -->
     <div class="navbar">
-        <img src="{{ url_for('static', filename='image1.png') }}" alt="Logo">
+        <img src="static/image1.png" alt="Logo">
     </div>
 
     <!-- Main Content -->
@@ -498,15 +505,21 @@
                     </div>
                 </form>
             </div>
-            {% if prediction_text and prediction_value %}
-            <div class="result-container show">
+            <div id="result-container" class="result-container" style="display: none;"
+                 data-prediction-text="{{ prediction_text or '' }}"
+                 data-prediction-value="{{ prediction_value or '' }}"
+                 data-team1-prob="{{ team1_probability_text or '' }}"
+                 data-team2-prob="{{ team2_probability_text or '' }}">
                 <div class="result-title">Prediction Result</div>
                 <div class="result-text">
-                    <span>{{ prediction_text }}</span>
-                    <span class="result-value">{{ prediction_value }}</span>
+                    <span id="prediction-text"></span>
+                    <span class="result-value" id="prediction-value"></span>
+                </div>
+                <div class="result-text" id="probabilities-block" style="margin-top: 16px; font-size: 18px; font-weight: normal; color: #444; display: none;">
+                    <span id="team1-prob" class="probability"></span>
+                    <span id="team2-prob" class="probability"></span>
                 </div>
             </div>
-            {% endif %}
         </div>
     </div>
 
@@ -520,6 +533,53 @@
                 document.getElementById('loading-screen').style.display = 'none';
                 document.querySelector('.navbar').style.display = 'block';
                 document.querySelector('.main-content').style.display = 'block';
+
+                const resultContainer = document.getElementById('result-container');
+                if (resultContainer) {
+                    const predictionText = resultContainer.dataset.predictionText || '';
+                    const predictionValue = resultContainer.dataset.predictionValue || '';
+                    const team1Prob = resultContainer.dataset.team1Prob || '';
+                    const team2Prob = resultContainer.dataset.team2Prob || '';
+
+                    if (predictionText && predictionValue) {
+                        document.getElementById('prediction-text').textContent = predictionText;
+                        document.getElementById('prediction-value').textContent = predictionValue;
+                        resultContainer.style.display = 'flex';
+                        resultContainer.classList.add('show');
+
+                        if (team1Prob && team2Prob) {
+                            const team1ProbElement = document.getElementById('team1-prob');
+                            const team2ProbElement = document.getElementById('team2-prob');
+
+                            team1ProbElement.textContent = team1Prob;
+                            team2ProbElement.textContent = team2Prob;
+
+                            const parseProbability = text => {
+                                const match = text.match(/([0-9]+(?:\.[0-9]+)?)%/);
+                                return match ? parseFloat(match[1]) : NaN;
+                            };
+
+                            const value1 = parseProbability(team1Prob);
+                            const value2 = parseProbability(team2Prob);
+
+                            team1ProbElement.className = 'probability';
+                            team2ProbElement.className = 'probability';
+
+                            if (!isNaN(value1) && !isNaN(value2)) {
+                                if (value1 > value2) {
+                                    team1ProbElement.classList.add('high');
+                                } else if (value2 > value1) {
+                                    team2ProbElement.classList.add('high');
+                                } else {
+                                    team1ProbElement.classList.add('high');
+                                    team2ProbElement.classList.add('high');
+                                }
+                            }
+
+                            document.getElementById('probabilities-block').style.display = 'block';
+                        }
+                    }
+                }
             }, 3000); // 3 seconds for loading
         });
     </script>
